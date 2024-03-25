@@ -1,17 +1,19 @@
-"use client";
-
 import React, { useEffect, useRef, useState } from "react";
 
 import { useAppStore } from "@/store/zustand";
 
 interface Props {
-	lineaActiva: boolean;
+	idLinea: number;
 }
 
-export const InputsLine = ({ lineaActiva }: Props) => {
+export const InputsLine = ({ idLinea }: Props) => {
 	const palabra = useAppStore((store) => store.palabra);
 	const intentos = useAppStore((store) => store.intentos);
 	const sumarIntentos = useAppStore((store) => store.sumarIntentos);
+	const alternarRonda = useAppStore((store) => store.alternarRonda);
+	const añadirLetrasCorrectas = useAppStore((store) => store.añadirLetrasCorrectas);
+	const añadirLetrasIncorrectas = useAppStore((store) => store.añadirLetrasIncorrectas);
+	const añadirLetrasCasiCorrectas = useAppStore((store) => store.añadirLetrasCasiCorrectas);
 
 	const length = palabra.length;
 
@@ -65,6 +67,11 @@ export const InputsLine = ({ lineaActiva }: Props) => {
 		} else if (e.key === "Enter" && index === length - 1) {
 			// Proceso para comprobar si se ha completado la palabra
 			verificarLinea();
+			
+			// const nextInput = document.getElementById(`linea-${idLinea}`);
+			// console.log(nextInput?.nextElementSibling?.firstElementChild);
+			
+			// nextInput?.focus();
 		}
 	};
 
@@ -75,25 +82,30 @@ export const InputsLine = ({ lineaActiva }: Props) => {
 			
 			if (palabra[index] === letraActual) { // La letra está en la posicion correcta
 				input.classList.add('correct-letter')
+				añadirLetrasCorrectas(letraActual);
 			} else if (palabra.includes(letraActual)) { // La letra está en la palabra
 				input.classList.add('close-letter')
+				añadirLetrasCasiCorrectas(letraActual);
 			} else { // La letra no está en la palabra
 				input.classList.add('wrong-letter')
+				añadirLetrasIncorrectas(letraActual);
 			}
 		});
 
-		// Pasamos a la siguiente linea
-
-		sumarIntentos();
-
-		if (intentos === 5) { // Fin de partida
-			console.log('fin de partida');
+		if (
+			intentos === 4 ||
+			wordLine.join("") === palabra.toLowerCase()
+		) { // Fin de partida
+			alternarRonda();
+			sumarIntentos(6); // Sumo varios intentos para deshabilitar todas las lineas
 			return;
 		}
+		
+		// Pasamos a la siguiente linea
+		sumarIntentos();
 	}
-	
 	return (
-		<div className="flex items-center gap-1">
+		<div className="flex items-center gap-1" id={`linea-${idLinea}`}>
 			{palabra.split("").map((_, index) => (
 				<input
 					type="text"
@@ -105,7 +117,8 @@ export const InputsLine = ({ lineaActiva }: Props) => {
 					onKeyDown={(e) => handleKeyDown(index, e)}
 					maxLength={1}
 					value={wordLine[index]}
-					disabled={!lineaActiva}
+					disabled={idLinea !== intentos}
+					id={`input-${idLinea}-${index}`}
 				/>
 			))}
 		</div>
